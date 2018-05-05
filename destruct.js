@@ -12,27 +12,16 @@ const getParams = {
 const now = moment().format('YYYYMMDD_HHmmss');
 
 terminal.stdout.on('data', data => console.log(`stdout: ${data}`));
+terminal.stdout.once('data', () => fs.unlinkSync('tweets.json'));
 terminal.on('exit', code => console.log(`child process exited with code   ${code}`));
 
 client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
   if (!error) {
-    fs.appendFileSync('tweets.json', JSON.stringify(tweets), (err) => {
-      if (err) {
-        console.log(err);
-      }
-    });
+    console.log('here');
+    fs.appendFileSync('tweets.json', JSON.stringify(tweets));
     terminal.stdin.write(`./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`);
-    terminal.stdin.write('rm tweets.json');
     terminal.stdin.end();
   } else {
     console.log(error);
   }
-
-  // fs.unlink('tweets.json', (err) => {
-  //   console.log('got here');
-  //   if (err) {
-  //     console.log('unlink error');
-  //     console.log(err);
-  //   }
-  // });
 });
