@@ -1,5 +1,5 @@
 # node-twitter-destructor
-A node version of the twitter destructor by @reyhan.
+A node version of the twitter destructor by (@rey)[https://github.com/rey].
 
 # Other dependencies
 
