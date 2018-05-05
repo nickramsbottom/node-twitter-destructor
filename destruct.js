@@ -11,9 +11,11 @@ const getParams = {
 };
 const now = moment().format('YYYYMMDD_HHmmss');
 const errorLog = 'error.txt';
+const ids = [];
 
 client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
   if (!error) {
+    tweets.forEach(tweet => ids.push(tweet.id));
     fs.appendFileSync('tweets.json', JSON.stringify(tweets));
     exec(`./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`,
       (err, stdout, stderr) => {
