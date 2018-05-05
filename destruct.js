@@ -2,6 +2,7 @@ const fs = require('fs');
 const Twitter = require('twitter');
 const moment = require('moment');
 const credentials = require('./credentials');
+const terminal = require('child_process').spawn('bash');
 
 const client = new Twitter(credentials);
 const getParams = {
@@ -24,3 +25,10 @@ client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
     console.log(error);
   }
 });
+
+terminal.stdout.on('data', data => console.log(`stdout:  + ${data}`));
+
+terminal.on('exit', code => console.log(`child process exited with code   ${code}`));
+
+terminal.stdin.write('git status\n');
+terminal.stdin.end();
