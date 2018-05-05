@@ -1,8 +1,8 @@
 const fs = require('fs');
 const Twitter = require('twitter');
 const moment = require('moment');
-const credentials = require('./credentials');
 const { exec } = require('child_process');
+const credentials = require('./credentials');
 
 const client = new Twitter(credentials);
 const getParams = {
@@ -10,7 +10,7 @@ const getParams = {
   count: 300,
 };
 const now = moment().format('YYYYMMDD_HHmmss');
-const errorLog = 'error.txt';
+const errorLog = 'error.log';
 const ids = [];
 
 client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
