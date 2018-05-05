@@ -1,0 +1,13 @@
+{
+  "name": "node-twitter-destructor",
+  "version": "1.0.0",
+  "description": "Clears tweets after backing them up.",
+  "main": "destruct.js",
+  "repository": "git@github.com:nickramsbottom/node-twitter-destructor.git",
+  "author": "Nick Ramsbottom",
+  "license": "MIT",
+  "dependencies": {
+    "moment": "^2.22.1",
+    "twitter": "^1.7.1"
+  }
+}

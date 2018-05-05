@@ -1,3 +1,5 @@
+error.log
+credentials.js
 # Logs
 logs
 *.log
