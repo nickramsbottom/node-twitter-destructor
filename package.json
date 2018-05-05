@@ -5,5 +5,8 @@
   "main": "destruct.js",
   "repository": "git@github.com:nickramsbottom/node-twitter-destructor.git",
   "author": "Nick Ramsbottom",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "twitter": "^1.7.1"
+  }
 }
