@@ -18,15 +18,14 @@ client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
     exec(`./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`,
       (err, stdout, stderr) => {
         if (err) {
-          console.log(err);
-          fs.appendFileSync(errorLog, err);
+          fs.appendFileSync(errorLog, `${err}\n`);
         }
         if (stderr) {
-          console.log('got here?');
+          fs.appendFileSync(errorLog, `${stderr}\n`);
         }
         fs.unlinkSync('tweets.json');
       });
   } else {
-    console.log(error);
+    fs.appendFileSync(errorLog, `${error}\n`);
   }
 });
