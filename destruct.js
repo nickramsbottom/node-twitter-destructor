@@ -59,6 +59,7 @@ const deleteTweets = (tweets) => {
 const backupTweets = tweets => new Promise((resolve, reject) => {
   const now = moment().format('YYYYMMDD_HHmmss');
   const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`;
+
   exec(dropboxUploadCommand, (err, stdout, stderr) => {
     if (err || stderr) {
       logError(err || stderr, reject);
@@ -67,11 +68,11 @@ const backupTweets = tweets => new Promise((resolve, reject) => {
   });
 });
 
-const deleteLocalBackup = () => fs.unlinkSync(tempBackupFile);
+const deleteLocally = () => fs.unlinkSync(tempBackupFile);
 
 getTweets()
 .then(tweets => saveLocally(tweets))
 .then(tweets => backupTweets(tweets))
 .then(tweets => deleteTweets(tweets))
-.then(() => deleteLocalBackup())
+.then(() => deleteLocally())
 .catch(error => logError(error));
