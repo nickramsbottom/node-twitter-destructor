@@ -17,7 +17,7 @@ const logError = (error, reject) => {
   const errorString = JSON.stringify(error);
   fs.appendFileSync(errorLog, `${errorString}\n`);
   process.exitCode = 1;
-  return console.warn(error);
+  return console.warn('Twitter destructor ecoutered an error, check error.log.');
 };
 
 const getTweets = () => new Promise((resolve, reject) => {
