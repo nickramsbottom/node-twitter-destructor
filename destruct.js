@@ -9,10 +9,9 @@ const getParams = {
   screen_name: 'nickramsbottomt',
   count: 200,
 };
-const now = moment().format('YYYYMMDD_HHmmss');
+
 const errorLog = 'error.log';
 const tempBackupFile = 'tweets.json';
-const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`;
 
 const logError = (error, reject) => {
   fs.appendFileSync(errorLog, `${error}\n`);
@@ -58,6 +57,8 @@ const deleteTweets = (tweets) => {
 };
 
 const backupTweets = tweets => new Promise((resolve, reject) => {
+  const now = moment().format('YYYYMMDD_HHmmss');
+  const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`;
   exec(dropboxUploadCommand, (err, stdout, stderr) => {
     if (err || stderr) {
       logError(err || stderr, reject);
