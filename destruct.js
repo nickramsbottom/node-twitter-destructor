@@ -9,13 +9,39 @@ const getParams = {
   screen_name: 'nickramsbottomt',
   count: 200,
 };
-const now = moment().format('YYYYMMDD_HHmmss');
-const errorLog = 'error.log';
-const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`;
 
-const deleteTweetPromises = (ids) => {
-  const deletePromises = ids.map(id => new Promise((resolve, reject) =>
-    client.post(`statuses/destroy/${id}`, (err, result, response) => {
+const errorLog = 'error.log';
+const tempBackupFile = 'tweets.json';
+
+const logError = (error, reject) => {
+  fs.appendFileSync(errorLog, `${error}\n`);
+  if (reject) {
+    return reject(error);
+  }
+  return new Error(error);
+};
+
+const getTweets = () => new Promise((resolve, reject) => {
+  client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
+    if (error) {
+      logError(error, reject);
+    }
+    return resolve(tweets);
+  });
+});
+
+const saveLocally = tweets => new Promise((resolve, reject) => {
+  fs.appendFile(tempBackupFile, JSON.stringify(tweets), (err) => {
+    if (err) {
+      return reject(err);
+    }
+    return resolve(tweets);
+  });
+});
+
+const deleteTweets = (tweets) => {
+  const deletePromises = tweets.map(tweet => new Promise((resolve, reject) =>
+    client.post(`statuses/destroy/${tweet.id_str}`, (err, result, response) => {
       if (err) {
         return reject(err);
       }
@@ -25,44 +51,28 @@ const deleteTweetPromises = (ids) => {
       return resolve();
     }),
   )
-  .catch((delerr) => {
-    fs.appendFileSync(errorLog, `${delerr}\n`);
-  }));
+  .catch(error => logError(error)));
 
-  return deletePromises;
+  return Promise.all(deletePromises);
 };
 
-const dropboxUploadCallback = (err, stdout, stderr, ids) => {
-  if (err) {
-    fs.appendFileSync(errorLog, `${err}\n`);
-    throw new Error(err);
-  }
+const backupTweets = tweets => new Promise((resolve, reject) => {
+  const now = moment().format('YYYYMMDD_HHmmss');
+  const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`;
 
-  if (stderr) {
-    fs.appendFileSync(errorLog, `${stderr}\n`);
-    throw new Error(stderr);
-  }
-
-  fs.unlinkSync('tweets.json');
-
-  return Promise.all(deleteTweetPromises(ids));
-};
-
-
-client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
-  const ids = [];
-
-  if (error) {
-    fs.appendFileSync(errorLog, `${error}\n`);
-    throw new Error(error);
-  }
-
-  if (tweets.length === 0) {
-    return;
-  }
-
-  tweets.forEach(tweet => ids.push(tweet.id_str));
-  fs.appendFileSync('tweets.json', JSON.stringify(tweets));
-  exec(dropboxUploadCommand, (err, stdout, stderr) =>
-    dropboxUploadCallback(err, stdout, stderr, ids));
+  exec(dropboxUploadCommand, (err, stdout, stderr) => {
+    if (err || stderr) {
+      logError(err || stderr, reject);
+    }
+    resolve(tweets);
+  });
 });
+
+const deleteLocally = () => fs.unlinkSync(tempBackupFile);
+
+getTweets()
+.then(tweets => saveLocally(tweets))
+.then(tweets => backupTweets(tweets))
+.then(tweets => deleteTweets(tweets))
+.then(() => deleteLocally())
+.catch(error => logError(error));
