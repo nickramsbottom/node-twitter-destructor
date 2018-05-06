@@ -11,11 +11,32 @@ const getParams = {
 };
 const now = moment().format('YYYYMMDD_HHmmss');
 const errorLog = 'error.log';
+const tempBackupFile = 'tweets.json';
 const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`;
 
-const deleteTweetPromises = (ids) => {
-  const deletePromises = ids.map(id => new Promise((resolve, reject) =>
-    client.post(`statuses/destroy/${id}`, (err, result, response) => {
+const getTweets = () => new Promise((resolve, reject) => {
+  client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
+    if (error) {
+      fs.appendFileSync(errorLog, `${error}\n`);
+      return reject(error);
+    }
+    return resolve(tweets);
+  });
+});
+
+const saveLocally = tweets => new Promise((resolve, reject) => {
+  fs.appendFile(tempBackupFile, JSON.stringify(tweets), (err) => {
+    if (err) {
+      return reject(err);
+    }
+    return resolve(tweets);
+  });
+});
+
+
+const deleteTweets = (tweets) => {
+  const deletePromises = tweets.map(tweet => new Promise((resolve, reject) =>
+    client.post(`statuses/destroy/${tweet.id_str}`, (err, result, response) => {
       if (err) {
         return reject(err);
       }
@@ -29,40 +50,33 @@ const deleteTweetPromises = (ids) => {
     fs.appendFileSync(errorLog, `${delerr}\n`);
   }));
 
-  return deletePromises;
+  return Promise.all(deletePromises);
 };
 
-const dropboxUploadCallback = (err, stdout, stderr, ids) => {
-  if (err) {
-    fs.appendFileSync(errorLog, `${err}\n`);
-    throw new Error(err);
-  }
+const backupTweets = tweets => new Promise((resolve, reject) => {
+  exec(dropboxUploadCommand, (err, stdout, stderr) => {
+    if (err) {
+      fs.appendFileSync(errorLog, `${err}\n`);
+      reject(err);
+    }
 
-  if (stderr) {
-    fs.appendFileSync(errorLog, `${stderr}\n`);
-    throw new Error(stderr);
-  }
+    if (stderr) {
+      fs.appendFileSync(errorLog, `${stderr}\n`);
+      reject(stderr);
+    }
 
-  fs.unlinkSync('tweets.json');
+    resolve(tweets);
+  });
+});
 
-  return Promise.all(deleteTweetPromises(ids));
-};
+const deleteLocalBackup = () => fs.unlinkSync(tempBackupFile);
 
-
-client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
-  const ids = [];
-
-  if (error) {
-    fs.appendFileSync(errorLog, `${error}\n`);
-    throw new Error(error);
-  }
-
-  if (tweets.length === 0) {
-    return;
-  }
-
-  tweets.forEach(tweet => ids.push(tweet.id_str));
-  fs.appendFileSync('tweets.json', JSON.stringify(tweets));
-  exec(dropboxUploadCommand, (err, stdout, stderr) =>
-    dropboxUploadCallback(err, stdout, stderr, ids));
+getTweets()
+.then(tweets => saveLocally(tweets))
+.then(tweets => backupTweets(tweets))
+.then(tweets => deleteTweets(tweets))
+.then(() => deleteLocalBackup())
+.catch((error) => {
+  fs.appendFileSync(errorLog, `${error}\n`);
+  throw new Error(error);
 });
