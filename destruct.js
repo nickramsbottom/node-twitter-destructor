@@ -11,11 +11,13 @@ const now = moment().format('YYYYMMDD_HHmmss');
 const screenName = 'nickramsbottomt';
 
 const logError = (error, reject) => {
-  fs.appendFileSync(errorLog, `${error}\n`);
   if (reject) {
     return reject(error);
   }
-  return new Error(error);
+  const errorString = JSON.stringify(error);
+  fs.appendFileSync(errorLog, `${errorString}\n`);
+  process.exitCode = 1;
+  return console.warn(error);
 };
 
 const getTweets = () => new Promise((resolve, reject) => {
@@ -44,11 +46,8 @@ const saveLocally = tweets => new Promise((resolve, reject) => {
 const deleteTweets = (tweets) => {
   const deletePromises = tweets.map(tweet => new Promise((resolve, reject) =>
     client.post(`statuses/destroy/${tweet.id_str}`, (err, result, response) => {
-      if (err) {
-        return reject(err);
-      }
-      if (response.statusCode !== 200) {
-        return reject(response);
+      if (err || response.statusCode !== 200) {
+        logError(err || response);
       }
       return resolve();
     }),
@@ -77,12 +76,8 @@ const updateProfileDescription = tweets => new Promise((resolve, reject) => {
   };
 
   client.post('account/update_profile', parameters, (err, result, response) => {
-    if (err) {
-      return reject(err);
-    }
-
-    if (response.statusCode !== 200) {
-      return reject(response);
+    if (err || response.statusCode !== 200) {
+      logError(err || response);
     }
 
     return resolve(tweets);
