@@ -7,7 +7,7 @@ const credentials = require('./credentials');
 const client = new Twitter(credentials);
 const errorLog = 'error.log';
 const tempBackupFile = 'tweets.json';
-const now = moment().format('YYYYMMDD_HHmmss');
+const now = moment();
 const screenName = 'nickramsbottomt';
 
 const logError = (error, reject) => {
@@ -61,7 +61,7 @@ const deleteTweets = (tweets) => {
 };
 
 const backupTweets = tweets => new Promise((resolve, reject) => {
-  const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${screenName}_${now}.json\n`;
+  const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${screenName}_${now.format('YYYYMMDD_HHmmss')}.json\n`;
 
   exec(dropboxUploadCommand, (err, stdout, stderr) => {
     if (err || stderr) {

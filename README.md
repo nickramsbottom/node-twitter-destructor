@@ -15,7 +15,7 @@ Create a new twitter app [here](https://apps.twitter.com/app/new). Make sure you
 
 Create `credentials.js` in the project root and populate it using `credentials-example.js` as a template.
 
-Change `screen_name` in `destruct.js`.
+Change `screenName` in `destruct.js`.
 
 ## Known Limitations
 
