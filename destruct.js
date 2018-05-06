@@ -17,7 +17,7 @@ const logError = (error, reject) => {
   const errorString = JSON.stringify(error);
   fs.appendFileSync(errorLog, `${errorString}\n`);
   process.exitCode = 1;
-  return console.warn('Twitter destructor ecoutered an error, check error.log.');
+  return console.warn('Twitter destructor ecoutered an error, tweets have not been deleted. Check error.log.');
 };
 
 const getTweets = () => new Promise((resolve, reject) => {
@@ -44,6 +44,9 @@ const saveLocally = tweets => new Promise((resolve, reject) => {
 });
 
 const deleteTweets = (tweets) => {
+  if (process.exitCode === 1) {
+    return null;
+  }
   const deletePromises = tweets.map(tweet => new Promise((resolve, reject) =>
     client.post(`statuses/destroy/${tweet.id_str}`, (err, result, response) => {
       if (err || response.statusCode !== 200) {
