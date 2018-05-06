@@ -75,7 +75,7 @@ const deleteLocally = () => fs.unlinkSync(tempBackupFile);
 
 const updateProfileDescription = tweets => new Promise((resolve, reject) => {
   const parameters = {
-    description: `${tweets.length} tweets removed at ${now}.`,
+    description: `${tweets.length} ${tweets.length === 0 ? 'tweets' : 'tweet'} cleaned on ${now.format('DD/MM/YYYY')}.`,
   };
 
   client.post('account/update_profile', parameters, (err, result, response) => {
