@@ -10,10 +10,7 @@ const tempBackupFile = 'tweets.json';
 const now = moment();
 const screenName = 'nickramsbottomt';
 
-const logError = (error, reject) => {
-  if (reject) {
-    return reject(error);
-  }
+const logError = (error) => {
   const errorString = JSON.stringify(error);
   fs.appendFileSync(errorLog, `${errorString}\n`);
   process.exitCode = 1;
@@ -28,7 +25,7 @@ const getTweets = () => new Promise((resolve, reject) => {
 
   client.get('statuses/user_timeline', parameters, (error, tweets, response) => {
     if (error) {
-      logError(error, reject);
+      reject(error);
     }
     return resolve(tweets);
   });
@@ -50,12 +47,11 @@ const deleteTweets = (tweets) => {
   const deletePromises = tweets.map(tweet => new Promise((resolve, reject) =>
     client.post(`statuses/destroy/${tweet.id_str}`, (err, result, response) => {
       if (err || response.statusCode !== 200) {
-        logError(err || response);
+        reject(err || response);
       }
       return resolve();
     }),
-  )
-  .catch(error => logError(error)));
+  ));
 
   return Promise.all(deletePromises);
 };
@@ -65,7 +61,7 @@ const backupTweets = tweets => new Promise((resolve, reject) => {
 
   exec(dropboxUploadCommand, (err, stdout, stderr) => {
     if (err || stderr) {
-      logError(err || stderr, reject);
+      reject(err || stderr);
     }
     resolve(tweets);
   });
@@ -80,7 +76,7 @@ const updateProfileDescription = tweets => new Promise((resolve, reject) => {
 
   client.post('account/update_profile', parameters, (err, result, response) => {
     if (err || response.statusCode !== 200) {
-      logError(err || response);
+      reject(err || response);
     }
 
     return resolve(tweets);
