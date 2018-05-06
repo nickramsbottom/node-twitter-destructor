@@ -14,11 +14,18 @@ const errorLog = 'error.log';
 const tempBackupFile = 'tweets.json';
 const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`;
 
+const logError = (error, reject) => {
+  fs.appendFileSync(errorLog, `${error}\n`);
+  if (reject) {
+    return reject(error);
+  }
+  return new Error(error);
+};
+
 const getTweets = () => new Promise((resolve, reject) => {
   client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
     if (error) {
-      fs.appendFileSync(errorLog, `${error}\n`);
-      return reject(error);
+      logError(error, reject);
     }
     return resolve(tweets);
   });
@@ -33,7 +40,6 @@ const saveLocally = tweets => new Promise((resolve, reject) => {
   });
 });
 
-
 const deleteTweets = (tweets) => {
   const deletePromises = tweets.map(tweet => new Promise((resolve, reject) =>
     client.post(`statuses/destroy/${tweet.id_str}`, (err, result, response) => {
@@ -46,25 +52,16 @@ const deleteTweets = (tweets) => {
       return resolve();
     }),
   )
-  .catch((delerr) => {
-    fs.appendFileSync(errorLog, `${delerr}\n`);
-  }));
+  .catch(error => logError(error)));
 
   return Promise.all(deletePromises);
 };
 
 const backupTweets = tweets => new Promise((resolve, reject) => {
   exec(dropboxUploadCommand, (err, stdout, stderr) => {
-    if (err) {
-      fs.appendFileSync(errorLog, `${err}\n`);
-      reject(err);
+    if (err || stderr) {
+      logError(err || stderr, reject);
     }
-
-    if (stderr) {
-      fs.appendFileSync(errorLog, `${stderr}\n`);
-      reject(stderr);
-    }
-
     resolve(tweets);
   });
 });
@@ -76,7 +73,4 @@ getTweets()
 .then(tweets => backupTweets(tweets))
 .then(tweets => deleteTweets(tweets))
 .then(() => deleteLocalBackup())
-.catch((error) => {
-  fs.appendFileSync(errorLog, `${error}\n`);
-  throw new Error(error);
-});
+.catch(error => logError(error));
