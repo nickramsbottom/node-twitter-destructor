@@ -5,13 +5,10 @@ const { exec } = require('child_process');
 const credentials = require('./credentials');
 
 const client = new Twitter(credentials);
-const getParams = {
-  screen_name: 'nickramsbottomt',
-  count: 200,
-};
-
 const errorLog = 'error.log';
 const tempBackupFile = 'tweets.json';
+const now = moment().format('YYYYMMDD_HHmmss');
+const screenName = 'nickramsbottomt';
 
 const logError = (error, reject) => {
   fs.appendFileSync(errorLog, `${error}\n`);
@@ -22,7 +19,12 @@ const logError = (error, reject) => {
 };
 
 const getTweets = () => new Promise((resolve, reject) => {
-  client.get('statuses/user_timeline', getParams, (error, tweets, response) => {
+  const parameters = {
+    screen_name: screenName,
+    count: 200,
+  };
+
+  client.get('statuses/user_timeline', parameters, (error, tweets, response) => {
     if (error) {
       logError(error, reject);
     }
@@ -45,7 +47,7 @@ const deleteTweets = (tweets) => {
       if (err) {
         return reject(err);
       }
-      if (!response.statusCode !== '200') {
+      if (response.statusCode !== 200) {
         return reject(response);
       }
       return resolve();
@@ -57,8 +59,7 @@ const deleteTweets = (tweets) => {
 };
 
 const backupTweets = tweets => new Promise((resolve, reject) => {
-  const now = moment().format('YYYYMMDD_HHmmss');
-  const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${getParams.screen_name}_${now}.json\n`;
+  const dropboxUploadCommand = `./Dropbox-Uploader/dropbox_uploader.sh upload ./tweets.json /${screenName}_${now}.json\n`;
 
   exec(dropboxUploadCommand, (err, stdout, stderr) => {
     if (err || stderr) {
@@ -70,9 +71,28 @@ const backupTweets = tweets => new Promise((resolve, reject) => {
 
 const deleteLocally = () => fs.unlinkSync(tempBackupFile);
 
+const updateProfileDescription = tweets => new Promise((resolve, reject) => {
+  const parameters = {
+    description: `${tweets.length} tweets removed at ${now}.`,
+  };
+
+  client.post('account/update_profile', parameters, (err, result, response) => {
+    if (err) {
+      return reject(err);
+    }
+
+    if (response.statusCode !== 200) {
+      return reject(response);
+    }
+
+    return resolve(tweets);
+  });
+});
+
 getTweets()
 .then(tweets => saveLocally(tweets))
 .then(tweets => backupTweets(tweets))
 .then(tweets => deleteTweets(tweets))
+.then(tweets => updateProfileDescription(tweets))
 .then(() => deleteLocally())
 .catch(error => logError(error));
